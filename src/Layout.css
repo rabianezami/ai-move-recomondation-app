@@ -1,0 +1,19 @@
+.container {
+    background-color: #002242 !important;
+}
+
+.form-control {
+   background-color: #003e53 !important;
+   color: white !important;
+}
+
+.form-control::placeholder {
+    color: white !important;
+    opacity: 1;
+}
+
+.btn {
+    background-color: #94ff94 !important
+}
+    
+   
