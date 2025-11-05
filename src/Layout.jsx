@@ -69,7 +69,7 @@ function Layout({ step, answers, handleChange, handleSubmit, loading, recommenda
             <p className="fst-italic">{recommendation.reason}</p>
 
             <button
-              className="btn btn-success w-100 fw-bold mt-3"
+              className="btn btn-success w-100 fw-bold mt-3 text-dark"
               onClick={() => setStep("questions")}
             >
               Go Again
