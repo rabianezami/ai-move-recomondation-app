@@ -1,8 +1,10 @@
 // src/App.jsx
 import React, { useState, useEffect } from "react";
-import { supabase } from "./config"; // Supabase فقط برای ذخیره embedding
+import { supabase } from "./config"; // Supabase
 import movies from "./content.js";
 import Layout from "./Layout";
+
+const SERVER_URL = "/api";
 
 function App() {
   const [step, setStep] = useState("questions");
@@ -10,7 +12,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
 
-  // هنگام mount اپ، embedding فیلم‌ها را در Supabase ذخیره کن
   useEffect(() => {
     async function storeMovieEmbeddings() {
       for (let movie of movies) {
@@ -21,26 +22,22 @@ function App() {
 
         if (!existing || existing.length === 0) {
           try {
-            // ساخت embedding از طریق سرور Node
-            const embeddingResponse = await fetch("http://localhost:5000/api/embeddings", {
+            const embeddingResponse = await fetch(`${SERVER_URL}/embedding`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ input:  movie.description  }),
+              body: JSON.stringify({ input: movie.description }),
             });
 
-           const movieEmbedding = await embeddingResponse.json(); 
-            // const movieEmbedding = embeddingData.embedding;
+            const movieEmbedding = await embeddingResponse.json();
 
-await supabase.from("movies_embeddings").insert([
-  {
-    title: movie.title,
-    release_year: parseInt(movie.release_year),
-    content: movie.description,
-    embedding: movieEmbedding
-  }
-]);
-
- console.log(`✅ Stored embedding for ${movie.title}`);
+            await supabase.from("movies_embeddings").insert([
+              {
+                title: movie.title,
+                release_year: parseInt(movie.release_year),
+                content: movie.description,
+                embedding: movieEmbedding,
+              },
+            ]);
           } catch (err) {
             console.error("Error storing movie embeddings:", err);
           }
@@ -61,22 +58,21 @@ await supabase.from("movies_embeddings").insert([
     try {
       const userInput = `${answers.q1} ${answers.q2} ${answers.q3}`.trim();
       if (!userInput) {
-  alert("Please answer at least one question!");
-  setLoading(false);
-  return;
-}
+        alert("Please answer at least one question!");
+        setLoading(false);
+        return;
+      }
 
-      // ساخت embedding کاربر از طریق سرور
-      const embeddingResponse = await fetch("http://localhost:5000/api/embeddings", {
+      // Embedding کاربر
+      const embeddingResponse = await fetch(`${SERVER_URL}/embedding`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input: userInput }),
       });
 
-     const userEmbedding = await embeddingResponse.json();
-      // const userEmbedding = embeddingData.embedding;
+      const userEmbedding = await embeddingResponse.json();
 
-      // جستجو در Supabase برای نزدیک‌ترین فیلم
+      // جستجوی فیلم نزدیک
       const { data: moviesData, error } = await supabase.rpc("match_movies", {
         query_embedding: userEmbedding,
         match_count: 1,
@@ -88,8 +84,8 @@ await supabase.from("movies_embeddings").insert([
 
       const matchedMovie = moviesData[0];
 
-      // گرفتن توضیح AI از طریق سرور
-      const explanationResponse = await fetch("http://localhost:5000/api/chat", {
+      // دریافت توضیح AI
+      const explanationResponse = await fetch(`${SERVER_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
